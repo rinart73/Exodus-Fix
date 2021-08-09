@@ -1,5 +1,9 @@
-function playerHasKey1() -- overridden
-    local player
+local exf_initialize, exf_dropKey -- extended server functions
+local exf_config -- server
+
+
+function playerHasKey1(player) -- overridden
+    player = player or Player()
     if callingPlayer then
         player = Player(callingPlayer)
     else
@@ -12,32 +16,33 @@ function playerHasKey1() -- overridden
     return player:getValue("exodus_key_time") ~= nil
 end
 
+
 if onServer() then
 
 
-local Azimuth = include("azimuthlib-basic")
+Azimuth = include("azimuthlib-basic")
 
-local exodusFix_configOptions = {
+local exf_configOptions = {
   _version = { default = "1.0", comment = "Config version. Don't touch." },
   ExodusKeyCooldown = { default = 86400, min = 60, format = "floor", comment = "How much time in seconds player has to wait before getting another Exodus Key (86400 - 1 day)" }
 }
-local ExodusFixConfig, exodusFix_isModified = Azimuth.loadConfig("ExodusFixes", exodusFix_configOptions)
-if exodusFix_isModified then
-    Azimuth.saveConfig("ExodusFixes", ExodusFixConfig, exodusFix_configOptions)
+local exf_config, exf_isModified = Azimuth.loadConfig("ExodusFixes", exf_configOptions)
+if exf_isModified then
+    Azimuth.saveConfig("ExodusFixes", exf_config, exf_configOptions)
 end
 
-local exodusFix_initialize = initialize
-function initialize()
-    exodusFix_initialize()
+exf_initialize = initialize
+function initialize(...)
+    exf_initialize(...)
 
-    Sector():registerCallback("onPlayerEntered", "exodusFix_checkExodusKeyTime")
+    Sector():registerCallback("onPlayerEntered", "exf_checkExodusKeyTime")
 end
 
-local exodusFix_dropKey = dropKey
-function dropKey()
+exf_dropKey = dropKey
+function dropKey(...)
     if playerHasKey1() then return end
 
-    exodusFix_dropKey()
+    exf_dropKey(...)
 
     local player = Player(callingPlayer)
     local server = Server()
@@ -45,11 +50,11 @@ function dropKey()
     if server:hasAdminPrivileges(player) then
         player:setValue("exodus_key_time", serverRuntime + 600) -- don't make things too difficult in singleplayer
     else
-        player:setValue("exodus_key_time", serverRuntime + ExodusFixConfig.ExodusKeyCooldown)
+        player:setValue("exodus_key_time", serverRuntime + exf_config.ExodusKeyCooldown)
     end
 end
 
-function exodusFix_checkExodusKeyTime(playerIndex)
+function exf_checkExodusKeyTime(playerIndex)
     local serverRuntime = Server():getValue("online_time") or 0
     local player = Player(playerIndex)
     local exodusTime = player:getValue("exodus_key_time")
